@@ -1,6 +1,7 @@
 ### Allows better regexp support.
 SHELL:=/bin/bash -O extglob
 
+
 ##### Compilers
 #CC=clang++
 CC=mpic++
