@@ -3,16 +3,16 @@ SHELL:=/bin/bash -O extglob
 
 ##### Compilers
 #CC=clang++
-CC=g++
+CC=mpic++
 HDF5FLAGS=-I/usr/include/hdf5/serial -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_BSD_SOURCE -D_FORTIFY_SOURCE=2 -g -fstack-protector-strong -Wformat -Werror=format-security
 WARNINGS=-Wall
-CFLAGS = ${HDF5FLAGS} -O2 -std=c++11 ${WARNINGS}
+CFLAGS = -fopenmp ${HDF5FLAGS} -O2 -std=c++11 ${WARNINGS}
 LDFLAGS = 
 
 ### Libraries
 COMMONLIBS=-lm
 BOOSTLIBS=-lboost_program_options
-HDF5LIBS=-L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_hl -lhdf5 -Wl,-z,relro -lpthread -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/serial
+HDF5LIBS=-L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_hl -lhdf5 -Wl,-z,relro -lpthread -lz -ldl -lomp -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/serial
 LIBS=${COMMONLIBS} ${BOOSTLIBS} ${HDF5LIBS}
 
 ### Sources and executable

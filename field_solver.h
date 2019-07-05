@@ -6,7 +6,9 @@
 #include <vector>
 #include "spatial_mesh.h"
 #include "inner_region.h"
-
+// MPI & OpenMP
+#include <mpi.h>
+#include <omp.h>
 
 class Field_solver {
   public:
@@ -31,9 +33,9 @@ class Field_solver {
     void single_Jacobi_iteration( Spatial_mesh &spat_mesh,
 				  Inner_regions_manager &inner_regions );
     void set_phi_next_at_boundaries();
-    void compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh );
     void set_phi_next_at_inner_regions( Inner_regions_manager &inner_regions );
     bool iterative_Jacobi_solutions_converged();
+    void compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh );
     void set_phi_next_as_phi_current();
     void transfer_solution_to_spat_mesh( Spatial_mesh &spat_mesh );
     // Eval fields from potential

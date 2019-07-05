@@ -28,7 +28,7 @@ void Field_solver::eval_potential( Spatial_mesh &spat_mesh,
 void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
                                              Inner_regions_manager &inner_regions )
 {
-    max_Jacobi_iterations = 2000;
+    max_Jacobi_iterations = 20;//2000;
     int iter;
 
     init_current_phi_from_spat_mesh_phi( spat_mesh );
@@ -87,6 +87,7 @@ void Field_solver::set_phi_next_at_boundaries()
     }
 }
 
+
 void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
 {
     double dxdxdydy = dx * dx * dy * dy;
@@ -94,10 +95,14 @@ void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
     double dydydzdz = dy * dy * dz * dz;
     double dxdxdydydzdz = dx * dx * dy * dy * dz * dz;
     double denom = 2 * ( dxdxdydy + dxdxdzdz + dydydzdz );
-    //
-    for ( int i = 1; i < nx - 1; i++ ) {
-        for ( int j = 1; j < ny - 1; j++ ) {
-            for ( int k = 1; k < nz - 1; k++ ) {
+    
+    // Parallelization parameters
+    int i, j, k;
+    double start_time = omp_get_wtime();
+    #pragma omp parallel for private(j, k)
+    for ( i = 1; i < nx - 1; i++ ) {
+        for ( j = 1; j < ny - 1; j++ ) {
+            for ( k = 1; k < nz - 1; k++ ) {
                 phi_next[i][j][k] =
                     ( phi_current[i-1][j][k] + phi_current[i+1][j][k] ) * dydydzdz;
                 phi_next[i][j][k] = phi_next[i][j][k] +
@@ -111,7 +116,61 @@ void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
             }
         }
     }
+    std::cout << "Time: " << omp_get_wtime() - start_time << std::endl;
 }
+
+/*void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
+{
+    double dxdxdydy = dx * dx * dy * dy;
+    double dxdxdzdz = dx * dx * dz * dz;
+    double dydydzdz = dy * dy * dz * dz;
+    double dxdxdydydzdz = dx * dx * dy * dy * dz * dz;
+    double denom = 2 * ( dxdxdydy + dxdxdzdz + dydydzdz );
+    
+    // Parallelization parameters
+    int omp_thread, omp_n_of_threads;
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_n_of_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_process_rank);
+    //#pragma omp parallel for shared(phi_next, nx, ny, nz) private(i_first, i_last, i, j, k)
+    int block_size = ceil(nx/opm_n_of_threads);
+    int i_first, i_last;
+    if (mpi_n_of_proc != 1){
+        if (mpi_process_rank == 0) { 
+            i_first = 1;
+            i_last = block_size - 1;
+        } 
+        else if (mpi_process_rank == (mpi_n_of_proc - 1)) {
+            i_first = mpi_process_rank*block_size;
+            i_last = nx - 2;
+        } 
+        else {
+            i_first = mpi_process_rank*block_size;
+            i_last = i_first + block_size - 1;
+        }
+    } else {
+        i_first = 1;
+        i_last = nx - 2;
+    }
+    
+        
+    for ( int i = i_first; i <= i_last; i++ ) {
+        for ( int j = 1; j < ny - 1; j++ ) {
+            for ( int k = 1; k < nz - 1; k++ ) {
+                phi_next[i][j][k] =
+                    ( phi_current[i-1][j][k] + phi_current[i+1][j][k] ) * dydydzdz;
+                phi_next[i][j][k] = phi_next[i][j][k] +
+                    ( phi_current[i][j-1][k] + phi_current[i][j+1][k] ) * dxdxdzdz;
+                phi_next[i][j][k] = phi_next[i][j][k] +
+                    ( phi_current[i][j][k-1] + phi_current[i][j][k+1] ) * dxdxdydy;
+                // Delta phi = - 4 * pi * rho
+                phi_next[i][j][k] = phi_next[i][j][k] +
+                    4.0 * M_PI * spat_mesh.charge_density[i][j][k] * dxdxdydydzdz;
+                phi_next[i][j][k] = phi_next[i][j][k] / denom;
+            }
+            //MPI_Bcast(&phi_next[i][j][0], nz, MPI_DOUBLE, mpi_process_rank, MPI_COMM_WORLD);
+        }
+    }
+}*/
 
 void Field_solver::set_phi_next_at_inner_regions( Inner_regions_manager &inner_regions )
 {
@@ -130,8 +189,8 @@ bool Field_solver::iterative_Jacobi_solutions_converged()
 {
     // todo: bind tol to config parameters
     //abs_tolerance = std::max( dx * dx, std::max( dy * dy, dz * dz ) ) / 5;
-    abs_tolerance = 1.0e-5;
-    rel_tolerance = 1.0e-12;
+    abs_tolerance = 1.0e-5;//1.0e-5;
+    rel_tolerance = 1.0e-12;//1.0e-12;
     double diff;
     double rel_diff;
     //double tol;
