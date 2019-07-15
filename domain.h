@@ -1,6 +1,8 @@
 #ifndef _DOMAIN_H_
 #define _DOMAIN_H_
 
+#define BOOST_BIND_NO_PLACEHOLDERS
+
 #include <iostream>
 #include <iomanip>
 #include <string>
