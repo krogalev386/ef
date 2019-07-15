@@ -1,3 +1,4 @@
+#define BOOST_BIND_NO_PLACEHOLDERS
 #include <iostream>
 #include <regex>
 #include <string>
@@ -5,6 +6,7 @@
 #include "config.h"
 #include "domain.h"
 #include "parse_cmd_line.h"
+#include <omp.h>
 
 void construct_domain( std::string config_or_h5_file,
 		       Domain **dom,
@@ -23,11 +25,15 @@ int main( int argc, char *argv[] )
     Domain *dom = NULL;
     construct_domain( config_or_h5_file, &dom, &continue_from_h5 );
 
+    double time = omp_get_wtime();
+
     if( continue_from_h5 ){
 	dom->continue_pic_simulation();
     } else {
 	dom->start_pic_simulation();
     }
+
+    std::cout << omp_get_wtime() - time << std::endl;
     
     // finalize_whatever_left
     delete dom;

@@ -1,14 +1,27 @@
 #ifndef _FIELD_SOLVER_H_
 #define _FIELD_SOLVER_H_
 
+#define BOOST_BIND_NO_PLACEHOLDERS
+
 #include <iostream>
 #include <boost/multi_array.hpp>
 #include <vector>
 #include "spatial_mesh.h"
 #include "inner_region.h"
 // MPI & OpenMP
-#include <mpi.h>
+//#include <mpi.h>
 #include <omp.h>
+
+#include <cusp/hyb_matrix.h>
+#include <cusp/monitor.h>
+#include <cusp/gallery/poisson.h>
+#include <cusp/krylov/cr.h>
+
+//#include <cusp/gallery/poisson.h>
+//#include <cusp/coo_matrix.h>
+//#include <cusp/print.h>
+
+//#include <thrust/host_vector.h>
 
 class Field_solver {
   public:
@@ -25,6 +38,13 @@ class Field_solver {
     double abs_tolerance;
     boost::multi_array<double, 3> phi_current;
     boost::multi_array<double, 3> phi_next;
+
+    cusp::hyb_matrix<int, double, cusp::host_memory> A; // matrix of linear system
+    cusp::array1d<double,cusp::host_memory> x; // unknown vector
+    cusp::array1d<double,cusp::host_memory> b; // right-hand part of Poisson equation
+    cusp::identity_operator<double, cusp::host_memory> M; // preconditioner;
+    //cusp::monitor<double> monitor; // terminator of CG evaluation
+
     void allocate_current_next_phi();
     // Solve potential
     void solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,

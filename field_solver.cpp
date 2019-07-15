@@ -30,9 +30,40 @@ void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
 {
     max_Jacobi_iterations = 20;//2000;
     int iter;
+    
+    //CUSP test
+    // works only for cuboid space
+    cusp::gallery::poisson7pt(A,(nx-2),(ny-2),(nz-2)); //initialization of system matrix
+    x = cusp::array1d<double, cusp::host_memory>((nx-2)*(ny-2)*(nz-2),0);
+    b = cusp::array1d<double, cusp::host_memory>((nx-2)*(ny-2)*(nz-2),1);
+    //monitor = cusp::monitor<double>(b, 100, 1e-3, 0, false);
+    cusp::monitor<double> monitor(b, 1000, 1e-4, 0, false);
+    M = cusp::identity_operator<double, cusp::host_memory>(A.num_rows, A.num_cols);
 
-    init_current_phi_from_spat_mesh_phi( spat_mesh );
-    for( iter = 0; iter < max_Jacobi_iterations; ++iter ){
+
+    init_current_phi_from_spat_mesh_phi( spat_mesh ); //phi_current is filling by zeros here (fixed)
+
+
+    set_phi_next_at_boundaries();
+
+    for (int i = 0; i < (nx-2); i++)
+        for (int j = 0; j < (ny-2); j++)
+            for (int l = 0; l < (nz-2); l++){
+                x[i + j*(nx-2) + l*(nx-2)*(ny-2)] = phi_current[i+1][j+1][l+1];
+                b[i + j*(nx-2) + l*(nx-2)*(ny-2)] = 4*M_PI*dx*dx*spat_mesh.charge_density[i+1][j+1][l+1];
+            }
+
+    //std::cout << std::endl;
+
+    cusp::krylov::cr(A, x, b, monitor, M);
+
+    for (int i = 0; i < (nx-2); i++)
+        for (int j = 0; j < (ny-2); j++)
+            for (int l = 0; l < (nz-2); l++){
+                phi_current[i+1][j+1][l+1] = x[i + j*(nx-2) + l*(nx-2)*(ny-2)];
+            }
+    
+    /*for( iter = 0; iter < max_Jacobi_iterations; ++iter ){
         single_Jacobi_iteration( spat_mesh, inner_regions );
         if ( iterative_Jacobi_solutions_converged() ) {
             break;
@@ -41,7 +72,16 @@ void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
     }
     if ( iter == max_Jacobi_iterations ){
         printf("WARING: potential evaluation did't converge after max iterations!\n");
-    }
+    }*/
+    set_phi_next_as_phi_current(); // here phi_next becomes zeros, phi_current don't (fixed)
+
+    /*for (int i = 0; i < (nx-2); i++)
+        for (int j = 0; j < (ny-2); j++)
+            for (int l = 0; l < (nz-2); l++){
+                if(phi_current[i+1][j+1][l+1]!=0)
+                    std::cout << phi_current[i+1][j+1][l+1];
+            }*/
+
     transfer_solution_to_spat_mesh( spat_mesh );
 
     return;
@@ -96,9 +136,9 @@ void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
     double dxdxdydydzdz = dx * dx * dy * dy * dz * dz;
     double denom = 2 * ( dxdxdydy + dxdxdzdz + dydydzdz );
     
-    // Parallelization parameters
+    /*// Parallelization parameters
     int i, j, k;
-    double start_time = omp_get_wtime();
+    //double start_time = omp_get_wtime();
     #pragma omp parallel for private(j, k)
     for ( i = 1; i < nx - 1; i++ ) {
         for ( j = 1; j < ny - 1; j++ ) {
@@ -115,8 +155,8 @@ void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
                 phi_next[i][j][k] = phi_next[i][j][k] / denom;
             }
         }
-    }
-    std::cout << "Time: " << omp_get_wtime() - start_time << std::endl;
+    }*/
+    //std::cout << "Time: " << omp_get_wtime() - start_time << std::endl;
 }
 
 /*void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
