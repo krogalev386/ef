@@ -15,7 +15,7 @@ LDFLAGS =
 COMMONLIBS=-lm -lgomp
 BOOSTLIBS=-lboost_program_options
 HDF5LIBS=-L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_hl -lhdf5 -Wl,-z,relro -lpthread -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/serial
-LIBS=${COMMONLIBS} ${BOOSTLIBS} ${HDF5LIBS} $
+LIBS=${COMMONLIBS} ${BOOSTLIBS} ${HDF5LIBS} 
 
 ### Sources and executable
 CPPSOURCES=$(wildcard *.cpp)

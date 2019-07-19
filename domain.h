@@ -47,6 +47,7 @@ class Domain {
     void write_step_to_save();
     void write();
     void set_output_filename_prefix_and_suffix( std::string prefix, std::string suffix );
+    void prepare_linear_system();
     virtual ~Domain();
   private:
     // Pic algorithm

@@ -46,15 +46,33 @@ Domain::Domain( hid_t h5file_id ) :
 void Domain::start_pic_simulation()
 {
     // fields in domain without any particles
+    /*-----------------------------------------------------*/
+    // prepare linear system for field solver
+    prepare_linear_system();
+    /*-----------------------------------------------------*/
+    std::cout << "eval_and_write_fields_without_particles..." << std::endl;
     eval_and_write_fields_without_particles();
+    std::cout << "eval_and_write_fields_without_particles done" << std::endl;
     // generate particles and write initial step
+    std::cout << "prepare_boris_integration..." << std::endl;
     prepare_boris_integration();
+    std::cout << "prepare_boris_integration done" << std::endl;
+    std::cout << "write_step_to_save..." << std::endl;
     write_step_to_save();
+    std::cout << "write_step_to_save done" << std::endl;
     // run simulation
     run_pic();
 
     return;
 }
+
+/*-----------------------------------------------------*/
+void Domain::prepare_linear_system()
+{
+    field_solver.prepare_linear_system( spat_mesh, inner_regions );
+}
+/*-----------------------------------------------------*/
+
 
 void Domain::continue_pic_simulation()
 {

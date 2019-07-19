@@ -6,7 +6,7 @@
 #include "config.h"
 #include "domain.h"
 #include "parse_cmd_line.h"
-#include <omp.h>
+//#include <omp.h>
 
 void construct_domain( std::string config_or_h5_file,
 		       Domain **dom,
@@ -33,7 +33,7 @@ int main( int argc, char *argv[] )
 	dom->start_pic_simulation();
     }
 
-    std::cout << omp_get_wtime() - time << std::endl;
+    std::cout << "Total work time: " << omp_get_wtime() - time << std::endl;
     
     // finalize_whatever_left
     delete dom;
