@@ -76,6 +76,7 @@ void Domain::prepare_linear_system()
 
 void Domain::continue_pic_simulation()
 {
+    prepare_linear_system();
     run_pic();
     return;
 }
