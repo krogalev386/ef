@@ -72,6 +72,11 @@ public:
     double temperature;
     double charge;
     double mass;
+    /*-------------------------------------------------------------------*/
+    double time_particle_injection_start;
+    double time_particle_injection_stop;
+    /*-------------------------------------------------------------------*/
+
 public:
     Particle_source_config_part(){};
     Particle_source_config_part( std::string name, boost::property_tree::ptree &ptree ) :
@@ -84,7 +89,11 @@ public:
         mean_momentum_z( ptree.get<double>("mean_momentum_z") ),
         temperature( ptree.get<double>("temperature") ),
         charge( ptree.get<double>("charge") ),
-        mass( ptree.get<double>("mass") )
+        mass( ptree.get<double>("mass") ),
+        /*-------------------------------------------------------------------*/
+        time_particle_injection_start( ptree.get<double>("time_particle_injection_start") ),
+        time_particle_injection_stop( ptree.get<double>("time_particle_injection_stop") )
+        /*-------------------------------------------------------------------*/
         {};
     virtual ~Particle_source_config_part() {};
     virtual void print() { 
@@ -99,6 +108,10 @@ public:
         std::cout << "temperature = " << temperature << std::endl;
         std::cout << "charge = " << charge << std::endl;
         std::cout << "mass = " << mass << std::endl;
+        /*-------------------------------------------------------------------*/
+        std::cout << "particle injection start time  = " << time_particle_injection_start << std::endl;
+        std::cout << "particle injection stop time = " << time_particle_injection_stop << std::endl;
+        /*-------------------------------------------------------------------*/
     }
 };
 

@@ -176,7 +176,7 @@ void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
                 }
 
     cusp::blas::axpby(b_const, b_var, b, 1, 1);
-    cusp::monitor<double> monitor(b, 300, 1e-1, 0, false);  
+    cusp::monitor<double> monitor(b, 150, 1e-2, 0, false);  
     cusp::krylov::cg(A, x, b, monitor, M);
 
     for (int i = 0; i < nx; i++)

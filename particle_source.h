@@ -21,6 +21,11 @@ public:
     std::string name;
     std::string geometry_type;
     std::vector<Particle> particles;
+    /*--------------------------------------*/
+    // Time interval of particle injection    
+    double time_particle_injection_start;
+    double time_particle_injection_stop;
+    /*--------------------------------------*/
 protected:
     int initial_number_of_particles;
     int particles_to_generate_each_step;
@@ -34,6 +39,7 @@ protected:
     // Random number generator
     //std::default_random_engine rnd_gen;
     std::mt19937 rnd_gen;
+
 public:
     Particle_source( Config &conf, Particle_source_config_part &src_conf );
     Particle_source( hid_t h5_particle_source_group_id );

@@ -7,7 +7,7 @@ Particle_source::Particle_source(
     Config &conf, 
     Particle_source_config_part &src_conf )
 {
-    check_correctness_of_related_config_fields( conf, src_conf );
+    //check_correctness_of_related_config_fields( conf, src_conf );
     set_parameters_from_config( src_conf );
 }
 
@@ -47,7 +47,11 @@ void Particle_source::set_parameters_from_config( Particle_source_config_part &s
 				src_conf.mean_momentum_z );
     temperature = src_conf.temperature;
     charge = src_conf.charge;
-    mass = src_conf.mass;    
+    mass = src_conf.mass;
+    /*-------------------------------------------*/
+    time_particle_injection_start = src_conf.time_particle_injection_start;
+    time_particle_injection_stop = src_conf.time_particle_injection_stop;
+    /*-------------------------------------------*/
     std::random_device rd;
     rnd_gen = std::mt19937( rd() );
     // Initial id
@@ -99,7 +103,16 @@ void Particle_source::read_hdf5_source_parameters( hid_t h5_particle_source_grou
     status = H5LTget_attribute_uint( h5_particle_source_group_id, "./",
 				     "max_id", &max_id );
     hdf5_status_check( status );
-    
+    /*---------------------------------------------------------------*/
+    status = H5LTget_attribute_double( h5_particle_source_group_id, "./",
+				     "time_particle_injection_start", 
+                                     &time_particle_injection_start );
+    hdf5_status_check( status );
+    status = H5LTget_attribute_double( h5_particle_source_group_id, "./",
+				     "time_particle_injection_stop", 
+                                     &time_particle_injection_stop );
+    hdf5_status_check( status );
+    /*---------------------------------------------------------------*/
     mean_momentum = vec3d_init( mean_mom_x, mean_mom_y, mean_mom_z );
 }
 
@@ -748,7 +761,7 @@ Particle_source_cylinder::Particle_source_cylinder(
     Particle_source( conf, src_conf )
 {
     geometry_type = "cylinder";
-    check_correctness_of_related_config_fields( conf, src_conf );
+    //check_correctness_of_related_config_fields( conf, src_conf );
     set_parameters_from_config( src_conf );
     generate_initial_particles();
 }
