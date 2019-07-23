@@ -271,7 +271,7 @@ Vec3d Particle_source::maxwell_momentum_distr(
     double maxwell_gauss_std_mean_z = vec3d_z( mean_momentum );
     /*-------------------------------------------------------*/
     const double k = 1.38065e-16;
-    double maxwell_gauss_std_dev = sqrt( k * temperature / mass );
+    double maxwell_gauss_std_dev = sqrt( mass * k * temperature );
     /*-------------------------------------------------------*/
     std::normal_distribution<double> 
 	normal_distr_x( maxwell_gauss_std_mean_x, maxwell_gauss_std_dev );
