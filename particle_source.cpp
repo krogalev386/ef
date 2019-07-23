@@ -489,6 +489,18 @@ void Particle_source::write_hdf5_source_parameters( hid_t current_source_group_i
     status = H5LTset_attribute_uint( current_source_group_id,
 				     current_group.c_str(),
 				     "max_id", &max_id, single_element );
+    /*-------------------------------------------------------------------*/
+    status = H5LTset_attribute_double( current_source_group_id,
+				       current_group.c_str(),
+    				       "time_particle_injection_start", 
+                                       &time_particle_injection_start, single_element );
+    hdf5_status_check( status );
+    status = H5LTset_attribute_double( current_source_group_id,
+				       current_group.c_str(),
+    				       "time_particle_injection_stop", 
+                                       &time_particle_injection_stop, single_element );
+    hdf5_status_check( status );
+    /*--------------------------------------------------------------------*/
     hdf5_status_check( status );
 }
 
