@@ -396,17 +396,10 @@ bool Domain::out_of_bound( const Particle &p )
 void Domain::generate_new_particles()
 {
     /*----------------------------------------*/
-    for ( auto &source : particle_sources.sources ){
-        bool kek = (time_grid.current_time > source.time_particle_injection_start  
-           && time_grid.current_time < source.time_particle_injection_stop);
-        std::cout << source.time_particle_injection_start << 
-        " " << 
-        time_grid.current_time << 
-        " " << 
-        source.time_particle_injection_stop << std::endl;
-        if (kek)
+    for ( auto &source : particle_sources.sources )
+        if (time_grid.current_time > source.time_particle_injection_start  
+           && time_grid.current_time < source.time_particle_injection_stop)
             source.generate_each_step();
-    }
     /*----------------------------------------*/
     /*particle_sources.generate_each_step();*/
     shift_new_particles_velocities_half_time_step_back();
