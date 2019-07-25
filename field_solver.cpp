@@ -61,13 +61,13 @@ void Field_solver::prepare_linear_system( Spatial_mesh &spat_mesh,
             ind_phi[i] = vec_size++;
     }
 
-    x = cusp::array1d<double,cusp::host_memory> (vec_size, 0);
-    b = cusp::array1d<double,cusp::host_memory> (vec_size, 0);    
-    b_const = cusp::array1d<double,cusp::host_memory> (vec_size, 0);    
-    b_var = cusp::array1d<double,cusp::host_memory> (vec_size, 0);    
+    x = cusp::array1d<double,cusp::device_memory> (vec_size, 0);
+    b = cusp::array1d<double,cusp::device_memory> (vec_size, 0);    
+    b_const = cusp::array1d<double,cusp::device_memory> (vec_size, 0);    
+    b_var = cusp::array1d<double,cusp::device_memory> (vec_size, 0);    
 
     // matrix preparation
-    A = cusp::coo_matrix<int, double, cusp::host_memory>(vec_size, vec_size, 7*vec_size);
+    cusp::coo_matrix<int, double, cusp::host_memory> A(vec_size, vec_size, 7*vec_size);
     int nd_ind; //index of current node
     int matr_elem = 0; //number of current sparce matrix element
     // indeces for access to neighbourgh nodes
@@ -157,15 +157,17 @@ void Field_solver::prepare_linear_system( Spatial_mesh &spat_mesh,
                 }
             }
     A.resize(vec_size, vec_size, matr_elem);
-    M = cusp::identity_operator<double, cusp::host_memory>(A.num_rows, A.num_cols);
+    //cusp::csr_matrix<int, float, cusp::device_memory> A_d(A);    
+    A_d = A;
+    M = cusp::identity_operator<double, cusp::device_memory>(A.num_rows, A.num_cols);
 }
 /*---------------------------------------------------------------*/
 
 void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
                                              Inner_regions_manager &inner_regions )
 {
+    double time = omp_get_wtime();
     init_current_phi_from_spat_mesh_phi( spat_mesh ); //phi_current is filling by zeros here (fixed)
-
     for (int i = 0; i < nx; i++)
         for (int j = 0; j < ny; j++)
             for (int l = 0; l < nz; l++)
@@ -174,10 +176,9 @@ void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
                     x[ind_phi[i + j*nx + l*nx*ny]] = phi_current[i][j][l];
                     b_var[ind_phi[i + j*nx + l*nx*ny]] = -4*M_PI*spat_mesh.charge_density[i][j][l];
                 }
-
     cusp::blas::axpby(b_const, b_var, b, 1, 1);
     cusp::monitor<double> monitor(b, 150, 1e-2, 0, false);  
-    cusp::krylov::cg(A, x, b, monitor, M);
+    cusp::krylov::cg(A_d, x, b, monitor, M);
 
     for (int i = 0; i < nx; i++)
         for (int j = 0; j < ny; j++)
@@ -185,7 +186,7 @@ void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
                 phi_current[i][j][l] = x[ind_phi[i + j*nx + l*nx*ny]];
 
     transfer_solution_to_spat_mesh( spat_mesh );
-
+    std::cout << "Field solver time: " << omp_get_wtime() - time << std::endl;
     return;
 }
 

@@ -2,6 +2,7 @@
 #include "particle_source.h"
 #include "particle.h"
 #include "vec3d.h"
+#include <omp.h>
 
 
 class Particle_to_mesh_map {

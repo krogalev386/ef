@@ -14,40 +14,48 @@ void Particle_to_mesh_map::weight_particles_charge_to_mesh(
     double dz = spat_mesh.z_cell_size;
     double cell_volume = dx * dy * dz;
     double volume_around_node = cell_volume;
-    int tlf_i, tlf_j, tlf_k; // 'tlf' = 'top_left_far'
-    double tlf_x_weight, tlf_y_weight, tlf_z_weight;
+    double time = omp_get_wtime();
+    #pragma omp parallel
+    {
+        int tlf_i, tlf_j, tlf_k; // 'tlf' = 'top_left_far'
+        double tlf_x_weight, tlf_y_weight, tlf_z_weight;
 
-    for( auto& part_src: particle_sources.sources ) {
-	for( auto& p : part_src.particles ) {
-	    next_node_num_and_weight( vec3d_x( p.position ), dx, &tlf_i, &tlf_x_weight );
-	    next_node_num_and_weight( vec3d_y( p.position ), dy, &tlf_j, &tlf_y_weight );
-	    next_node_num_and_weight( vec3d_z( p.position ), dz, &tlf_k, &tlf_z_weight );
-	    spat_mesh.charge_density[tlf_i][tlf_j][tlf_k] +=
-		tlf_x_weight * tlf_y_weight * tlf_z_weight
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i-1][tlf_j][tlf_k] +=
-		( 1.0 - tlf_x_weight ) * tlf_y_weight * tlf_z_weight
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i][tlf_j-1][tlf_k] +=
-		tlf_x_weight * ( 1.0 - tlf_y_weight ) * tlf_z_weight
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i-1][tlf_j-1][tlf_k] +=
-		( 1.0 - tlf_x_weight ) * ( 1.0 - tlf_y_weight ) * tlf_z_weight
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i][tlf_j][tlf_k - 1] +=
-		tlf_x_weight * tlf_y_weight * ( 1.0 - tlf_z_weight )
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i-1][tlf_j][tlf_k - 1] +=
-		( 1.0 - tlf_x_weight ) * tlf_y_weight * ( 1.0 - tlf_z_weight )
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i][tlf_j-1][tlf_k - 1] +=
-		tlf_x_weight * ( 1.0 - tlf_y_weight ) * ( 1.0 - tlf_z_weight )
-		* p.charge / volume_around_node;
-	    spat_mesh.charge_density[tlf_i-1][tlf_j-1][tlf_k - 1] +=
-		( 1.0 - tlf_x_weight ) * ( 1.0 - tlf_y_weight ) * ( 1.0 - tlf_z_weight )
-		* p.charge / volume_around_node;
-	}		
+        int i, j;
+        for( i = 0; i < particle_sources.sources.size(); ++i) {
+            #pragma omp for
+	    for( j = 0; j < particle_sources.sources[i].particles.size(); ++j) {
+                Particle &p = particle_sources.sources[i].particles[j];
+	        next_node_num_and_weight( vec3d_x( p.position ), dx, &tlf_i, &tlf_x_weight );
+	        next_node_num_and_weight( vec3d_y( p.position ), dy, &tlf_j, &tlf_y_weight );
+                next_node_num_and_weight( vec3d_z( p.position ), dz, &tlf_k, &tlf_z_weight );
+                spat_mesh.charge_density[tlf_i][tlf_j][tlf_k] +=
+                   tlf_x_weight * tlf_y_weight * tlf_z_weight
+                   * p.charge / volume_around_node;
+                spat_mesh.charge_density[tlf_i-1][tlf_j][tlf_k] +=
+		   ( 1.0 - tlf_x_weight ) * tlf_y_weight * tlf_z_weight
+		   * p.charge / volume_around_node;
+	        spat_mesh.charge_density[tlf_i][tlf_j-1][tlf_k] +=
+		   tlf_x_weight * ( 1.0 - tlf_y_weight ) * tlf_z_weight
+		    * p.charge / volume_around_node;
+	        spat_mesh.charge_density[tlf_i-1][tlf_j-1][tlf_k] +=
+		    ( 1.0 - tlf_x_weight ) * ( 1.0 - tlf_y_weight ) * tlf_z_weight
+		    * p.charge / volume_around_node;
+	        spat_mesh.charge_density[tlf_i][tlf_j][tlf_k - 1] +=
+		    tlf_x_weight * tlf_y_weight * ( 1.0 - tlf_z_weight )
+		    * p.charge / volume_around_node;
+	        spat_mesh.charge_density[tlf_i-1][tlf_j][tlf_k - 1] +=
+		    ( 1.0 - tlf_x_weight ) * tlf_y_weight * ( 1.0 - tlf_z_weight )
+		    * p.charge / volume_around_node;
+	        spat_mesh.charge_density[tlf_i][tlf_j-1][tlf_k - 1] +=
+		    tlf_x_weight * ( 1.0 - tlf_y_weight ) * ( 1.0 - tlf_z_weight )
+		    * p.charge / volume_around_node;
+	        spat_mesh.charge_density[tlf_i-1][tlf_j-1][tlf_k - 1] +=
+		    ( 1.0 - tlf_x_weight ) * ( 1.0 - tlf_y_weight ) * ( 1.0 - tlf_z_weight )
+		    * p.charge / volume_around_node;
+	    }		
+        }
     }
+    std::cout << "Weight evaluation time: " << omp_get_wtime() - time << std::endl;
     return;
 }
 

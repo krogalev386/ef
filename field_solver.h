@@ -33,12 +33,12 @@ class Field_solver {
     boost::multi_array<double, 3> phi_current;
     boost::multi_array<double, 3> phi_next;
 
-    cusp::coo_matrix<int, double, cusp::host_memory> A; // matrix of linear system
-    cusp::array1d<double,cusp::host_memory> x; // unknown vector
-    cusp::array1d<double,cusp::host_memory> b; // right-hand part of Poisson equation
-    cusp::array1d<double,cusp::host_memory> b_const; // constant part of b (boundary condition)
-    cusp::array1d<double,cusp::host_memory> b_var; // variable part of b (charge density)
-    cusp::identity_operator<double, cusp::host_memory> M; // preconditioner;
+    cusp::csr_matrix<int, double, cusp::device_memory> A_d; // matrix of linear system
+    cusp::array1d<double,cusp::device_memory> x; // unknown vector
+    cusp::array1d<double,cusp::device_memory> b; // right-hand part of Poisson equation
+    cusp::array1d<double,cusp::device_memory> b_const; // constant part of b (boundary condition)
+    cusp::array1d<double,cusp::device_memory> b_var; // variable part of b (charge density)
+    cusp::identity_operator<double, cusp::device_memory> M; // preconditioner;
     std::vector<int> ind_phi; // storage of indeces of non-boundary and non-inner nodes
 
 

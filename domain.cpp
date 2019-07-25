@@ -112,13 +112,22 @@ void Domain::prepare_boris_integration()
 
 void Domain::advance_one_time_step()
 {
+    double time = omp_get_wtime();
     push_particles();
+    std::cout << "Time of pushing of particles: " << omp_get_wtime() - time << std::endl;
+    time = omp_get_wtime();
     apply_domain_constrains();
+    std::cout << "Time of applying domain constrain: " << omp_get_wtime() - time << std::endl;
     if ( particle_interaction_model.pic ){
+        time = omp_get_wtime();
         eval_charge_density();
+        std::cout << "Time of charge density evaluation: " << omp_get_wtime() - time << std::endl;
+        time = omp_get_wtime();
         eval_potential_and_fields();
+        std::cout << "Time of potential and fields evaluation: " << omp_get_wtime() - time << std::endl;
     }
     update_time_grid();
+    std::cout << std::endl;
     return;
 }
 
@@ -200,28 +209,34 @@ void Domain::shift_new_particles_velocities_half_time_step_back()
 
 void Domain::update_momentum( double dt )
 {
-    Vec3d total_el_field, total_mgn_field;
-    unsigned int source_idx, particle_idx;
+    double time = omp_get_wtime();
+    #pragma omp parallel
+    {
+        Vec3d total_el_field, total_mgn_field;
+        unsigned int source_idx, particle_idx;
 
-    for( source_idx = 0;
-         source_idx < particle_sources.sources.size();
-         source_idx++ ){
-        auto &src = particle_sources.sources[ source_idx ];
-        for( particle_idx = 0;
-             particle_idx < src.particles.size();
-             particle_idx++ ){
-            auto &p = src.particles[ particle_idx ];
-            total_el_field = compute_electric_field_at_particle_position(
-                p, particle_idx, source_idx );
-            total_mgn_field = compute_magnetic_field_at_particle_position( p );
-            //
-            if ( external_fields.magnetic.empty() ){
-                boris_update_particle_momentum_no_mgn_field( p, dt, total_el_field );
-            } else {
-                boris_update_particle_momentum( p, dt, total_el_field, total_mgn_field );
+        for( source_idx = 0;
+             source_idx < particle_sources.sources.size();
+             source_idx++ ){
+            auto &src = particle_sources.sources[ source_idx ];
+            #pragma omp for
+            for( particle_idx = 0;
+                 particle_idx < src.particles.size();
+                 particle_idx++ ){
+                auto &p = src.particles[ particle_idx ];
+                total_el_field = compute_electric_field_at_particle_position(
+                    p, particle_idx, source_idx );
+                total_mgn_field = compute_magnetic_field_at_particle_position( p );
+                //
+                if ( external_fields.magnetic.empty() ){
+                    boris_update_particle_momentum_no_mgn_field( p, dt, total_el_field );
+                } else {
+                    boris_update_particle_momentum( p, dt, total_el_field, total_mgn_field );
+                }
             }
         }
     }
+    std::cout << "Update momentum time: " << omp_get_wtime() - time << std::endl;
     return;
 }
 
