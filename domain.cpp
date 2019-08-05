@@ -14,7 +14,7 @@ Domain::Domain( Config &conf ) :
     spat_mesh( conf ),
     inner_regions( conf, spat_mesh ),
     particle_to_mesh_map(),
-    field_solver( spat_mesh, inner_regions ),
+    field_solver( spat_mesh, inner_regions, conf ),
     particle_sources( conf ),
     external_fields( conf ),
     particle_interaction_model( conf )
@@ -29,7 +29,7 @@ Domain::Domain( hid_t h5file_id ) :
     spat_mesh( H5Gopen( h5file_id, "/SpatialMesh", H5P_DEFAULT ) ),
     inner_regions( H5Gopen( h5file_id, "/InnerRegions", H5P_DEFAULT ), spat_mesh ),
     particle_to_mesh_map(),
-    field_solver( spat_mesh, inner_regions ),
+    field_solver( spat_mesh, inner_regions, H5Gopen( h5file_id, "/FieldSolver", H5P_DEFAULT )),
     particle_sources( H5Gopen( h5file_id, "/ParticleSources", H5P_DEFAULT ) ),
     external_fields( H5Gopen( h5file_id, "/ExternalFields", H5P_DEFAULT ) ),
     particle_interaction_model(
@@ -478,6 +478,9 @@ void Domain::write()
 
     time_grid.write_to_file( output_file );
     spat_mesh.write_to_file( output_file );
+    /*--------------------------------------*/
+    field_solver.write_to_file( output_file );
+    /*--------------------------------------*/
     particle_sources.write_to_file( output_file );
     inner_regions.write_to_file( output_file );
     external_fields.write_to_file( output_file );

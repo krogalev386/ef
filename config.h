@@ -61,6 +61,30 @@ public:
     }
 };
 
+/*---------------------------------------------------------------*/
+class Field_solver_config_part{
+public:
+    std::string solving_method;
+    double abs_tolerance;
+    double rel_tolerance;
+    int max_iterations;
+public:
+    Field_solver_config_part(){};
+    Field_solver_config_part( /*std::string solving_method,*/ boost::property_tree::ptree &ptree ) :
+        //solving_method( solving_method ),
+        solving_method( ptree.get<std::string>("solving_method") ),
+        abs_tolerance( ptree.get<double>("abs_tolerance") ),
+        rel_tolerance( ptree.get<double>("rel_tolerance") ),
+        max_iterations( ptree.get<int>("max_iterations") )
+        {};
+    virtual ~Field_solver_config_part() {};
+    void print() { 
+        std::cout << "Solving method: " << solving_method << std::endl;
+        std::cout << "abs_tolerance = " << abs_tolerance << std::endl; 
+        std::cout << "rel_tolerance = " << rel_tolerance << std::endl;
+    }
+};
+/*---------------------------------------------------------------*/
 class Particle_source_config_part{
 public:
     std::string name;
@@ -671,6 +695,7 @@ class Config {
 public:
     Time_config_part time_config_part;
     Mesh_config_part mesh_config_part;
+    Field_solver_config_part field_solver_config_part;
     boost::ptr_vector<Particle_source_config_part> sources_config_part;
     boost::ptr_vector<Inner_region_config_part> inner_regions_config_part;
     boost::ptr_vector<External_field_config_part> fields_config_part;
@@ -684,6 +709,9 @@ public:
         std::cout << "=== Config file echo ===" << std::endl;
         time_config_part.print();
         mesh_config_part.print();
+        /*-----------------------------*/
+        field_solver_config_part.print();
+        /*-----------------------------*/
         for ( auto &s : sources_config_part ) {
             s.print();
         }

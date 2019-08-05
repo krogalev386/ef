@@ -12,6 +12,96 @@ Field_solver::Field_solver( Spatial_mesh &spat_mesh,
 
     allocate_current_next_phi();
 }
+/*-------------------------------------------------------------*/
+Field_solver::Field_solver( Spatial_mesh &spat_mesh,
+                            Inner_regions_manager &inner_regions, 
+                            Config &conf )
+{
+    nx = spat_mesh.x_n_nodes;
+    ny = spat_mesh.y_n_nodes;
+    nz = spat_mesh.z_n_nodes;
+    dx = spat_mesh.x_cell_size;
+    dy = spat_mesh.y_cell_size;
+    dz = spat_mesh.z_cell_size;
+
+    allocate_current_next_phi();
+
+    solving_method = conf.field_solver_config_part.solving_method;
+    abs_tolerance = conf.field_solver_config_part.abs_tolerance;
+    rel_tolerance = conf.field_solver_config_part.rel_tolerance;
+    max_iterations = conf.field_solver_config_part.max_iterations;
+}
+
+Field_solver::Field_solver( Spatial_mesh &spat_mesh,
+                            Inner_regions_manager &inner_regions, 
+                            hid_t h5_field_solver_group )
+{
+    nx = spat_mesh.x_n_nodes;
+    ny = spat_mesh.y_n_nodes;
+    nz = spat_mesh.z_n_nodes;
+    dx = spat_mesh.x_cell_size;
+    dy = spat_mesh.y_cell_size;
+    dz = spat_mesh.z_cell_size;
+
+    allocate_current_next_phi();
+
+    herr_t status;
+
+    char *char_method = new char[128];
+    status = H5LTget_attribute_string( h5_field_solver_group, "./",
+                                       "solving_method", char_method );
+    solving_method = std::string( char_method );
+    delete [] char_method;
+    hdf5_status_check( status );    
+
+    status = H5LTget_attribute_double( h5_field_solver_group, "./",
+				    "abs_tolerance", &abs_tolerance ); 
+    hdf5_status_check( status );
+    status = H5LTget_attribute_double( h5_field_solver_group, "./",
+				    "rel_tolerance", &rel_tolerance ); 
+    hdf5_status_check( status );
+    status = H5LTget_attribute_int( h5_field_solver_group, "./",
+				    "max_iterations", &max_iterations ); 
+    hdf5_status_check( status );
+}
+
+void Field_solver::write_to_file( hid_t h5_field_solver_group )
+{
+    hid_t group_id;
+    herr_t status;
+    int single_element = 1;
+    std::string hdf5_groupname = "/FieldSolver";
+    group_id = H5Gcreate( h5_field_solver_group, hdf5_groupname.c_str(),
+			  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT); hdf5_status_check( group_id );
+
+    status = H5LTset_attribute_double( h5_field_solver_group, hdf5_groupname.c_str(),
+				       "abs_tolerance", &abs_tolerance, single_element ); 
+    hdf5_status_check( status );
+    status = H5LTset_attribute_double( h5_field_solver_group, hdf5_groupname.c_str(),
+				       "rel_tolerance", &rel_tolerance, single_element ); 
+    hdf5_status_check( status );
+    status = H5LTset_attribute_int( h5_field_solver_group, hdf5_groupname.c_str(),
+				    "max_iterations", &max_iterations, single_element ); 
+    hdf5_status_check( status );
+    status = H5LTset_attribute_string( h5_field_solver_group,
+                                       hdf5_groupname.c_str(),
+                                       "solving_method", solving_method.c_str() );
+    hdf5_status_check( status );
+    status = H5Gclose(group_id); 
+    hdf5_status_check( status );
+}
+
+void Field_solver::hdf5_status_check( herr_t status )
+{
+    if( status < 0 ){
+        std::cout << "Something went wrong while writing Field_solver "
+                  << solving_method << "."
+                  << "Aborting." << std::endl;
+        exit( EXIT_FAILURE );
+    }
+}
+
+/*-------------------------------------------------------------*/
 
 void Field_solver::allocate_current_next_phi()
 {
@@ -65,6 +155,8 @@ void Field_solver::prepare_linear_system( Spatial_mesh &spat_mesh,
     b = cusp::array1d<double,cusp::device_memory> (vec_size, 0);    
     b_const = cusp::array1d<double,cusp::device_memory> (vec_size, 0);    
     b_var = cusp::array1d<double,cusp::device_memory> (vec_size, 0);    
+
+    M = cusp::identity_operator<double, cusp::device_memory>(vec_size, vec_size);
 
     // matrix preparation
     cusp::coo_matrix<int, double, cusp::host_memory> A(vec_size, vec_size, 7*vec_size);
@@ -157,9 +249,61 @@ void Field_solver::prepare_linear_system( Spatial_mesh &spat_mesh,
                 }
             }
     A.resize(vec_size, vec_size, matr_elem);
-    //cusp::csr_matrix<int, float, cusp::device_memory> A_d(A);    
     A_d = A;
-    M = cusp::identity_operator<double, cusp::device_memory>(A.num_rows, A.num_cols);
+    if ( solving_method.compare("Jacobi") == 0){
+       std::cout << "Smoother preparation..." << std::endl;
+       S = cusp::relaxation::jacobi<double, cusp::device_memory>(A_d);
+       std::cout << "Smoother preparation done" << std::endl;
+       r = cusp::array1d<double, cusp::device_memory>(A.num_rows);
+    }
+}
+
+void Field_solver::solve_linear_system()
+{
+    std::cout << solving_method << std::endl;
+    if (solving_method.compare("CG") == 0)
+        solve_CG();
+    else if ( solving_method.compare("CR") == 0)
+        solve_CR();
+    else if (solving_method.compare("BCG") == 0)
+        solve_BCG();
+    else if ( solving_method.compare("Jacobi") == 0)
+        solve_Jacobi();
+}
+
+void Field_solver::solve_CG()
+{
+    cusp::monitor<double> monitor(b, max_iterations, rel_tolerance, abs_tolerance, true);  
+    cusp::krylov::cg(A_d, x, b, monitor, M);
+}
+
+void Field_solver::solve_CR()
+{
+    cusp::monitor<double> monitor(b, max_iterations, rel_tolerance, abs_tolerance, true);  
+    cusp::krylov::cr(A_d, x, b, monitor, M);
+}
+
+void Field_solver::solve_BCG()
+{
+    int i;
+}
+
+
+void Field_solver::solve_Jacobi()
+{
+    std::cout << "cusp::multiply(A_d,x,r)..." << std::endl;
+    cusp::multiply(A_d,x,r);
+    std::cout << "cusp::blas::axpy(b,r,-1)" << std::endl;
+    cusp::blas::axpy(b,r,-1);
+    std::cout << "cusp::monitor<double> monitor" << std::endl;
+    cusp::monitor<double> monitor(b, max_iterations, rel_tolerance, abs_tolerance, true);  
+    while( !monitor.finished(r) ){
+        S(A_d, b, x);
+        cusp::multiply(A_d,x,r);
+        cusp::blas::axpy(b,r,-1);
+        ++monitor;
+    }
+          
 }
 /*---------------------------------------------------------------*/
 
@@ -177,8 +321,9 @@ void Field_solver::solve_poisson_eqn_Jacobi( Spatial_mesh &spat_mesh,
                     b_var[ind_phi[i + j*nx + l*nx*ny]] = -4*M_PI*spat_mesh.charge_density[i][j][l];
                 }
     cusp::blas::axpby(b_const, b_var, b, 1, 1);
-    cusp::monitor<double> monitor(b, 150, 1e-2, 0, false);  
-    cusp::krylov::cg(A_d, x, b, monitor, M);
+    //cusp::monitor<double> monitor(b, 150, 1e-2, 0, true);  
+    //cusp::krylov::cg(A_d, x, b, monitor, M);
+    solve_linear_system(); // solve A_d*x = b
 
     for (int i = 0; i < nx; i++)
         for (int j = 0; j < ny; j++)
@@ -198,82 +343,6 @@ void Field_solver::init_current_phi_from_spat_mesh_phi( Spatial_mesh &spat_mesh 
     return;
 }
 
-
-/*void Field_solver::set_phi_next_at_boundaries()
-{
-    for ( int j = 0; j < ny; j++ ) {
-        for ( int k = 0; k < nz; k++ ) {
-            phi_next[0][j][k] = phi_current[0][j][k];
-            phi_next[nx-1][j][k] = phi_current[nx-1][j][k];
-        }
-    }
-    //
-    for ( int i = 0; i < nx; i++ ) {
-        for ( int k = 0; k < nz; k++ ) {
-            phi_next[i][0][k] = phi_current[i][0][k];
-            phi_next[i][ny-1][k] = phi_current[i][ny-1][k];
-        }
-    }
-    //
-    for ( int i = 0; i < nx; i++ ) {
-        for ( int j = 0; j < ny; j++ ) {
-            phi_next[i][j][0] = phi_current[i][j][0];
-            phi_next[i][j][nz-1] = phi_current[i][j][nz-1];
-        }
-    }
-}*/
-
-
-/*void Field_solver::compute_phi_next_at_inner_points( Spatial_mesh &spat_mesh )
-{
-}
-
-void Field_solver::set_phi_next_at_inner_regions( Inner_regions_manager &inner_regions )
-{
-    for( auto &reg : inner_regions.regions ){
-        for( auto &node : reg.inner_nodes ){
-            // todo: mark nodes at edge during construction
-            // if (!node.at_domain_edge( nx, ny, nz )) {
-            phi_next[node.x][node.y][node.z] = reg.potential;
-            // }
-        }
-    }
-}
-
-
-bool Field_solver::iterative_Jacobi_solutions_converged()
-{
-    // todo: bind tol to config parameters
-    //abs_tolerance = std::max( dx * dx, std::max( dy * dy, dz * dz ) ) / 5;
-    abs_tolerance = 1.0e-5;//1.0e-5;
-    rel_tolerance = 1.0e-12;//1.0e-12;
-    double diff;
-    double rel_diff;
-    //double tol;
-    //
-    for ( int i = 0; i < nx; i++ ) {
-        for ( int j = 0; j < ny; j++ ) {
-            for ( int k = 0; k < nz; k++ ) {
-                diff = fabs( phi_next[i][j][k] - phi_current[i][j][k] );
-                rel_diff = diff / fabs( phi_current[i][j][k] );
-                if ( diff > abs_tolerance || rel_diff > rel_tolerance ){
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-}
-
-
-void Field_solver::set_phi_next_as_phi_current()
-{
-    // Looks like straightforward assignment
-    //   phi_next = phi_current
-    // would result in copy.
-    // Hopefully, it could be avoided with std::swap
-    std::swap( phi_current, phi_next );
-}*/
 
 void Field_solver::transfer_solution_to_spat_mesh( Spatial_mesh &spat_mesh )
 {

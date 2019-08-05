@@ -14,6 +14,8 @@ Config::Config( const std::string &filename )
                 time_config_part = Time_config_part( sections.second );
             } else if ( section_name.find( "SpatialMesh" ) != std::string::npos ) {
                 mesh_config_part = Mesh_config_part( sections.second );
+            } else if ( section_name.find( "FieldSolver" ) != std::string::npos ) {
+                field_solver_config_part = Field_solver_config_part(sections.second );
             } else if (
                 section_name.find( "ParticleSourceBox." ) != std::string::npos ) {
                 std::string source_name = section_name.substr(section_name.find(".") + 1);
