@@ -364,6 +364,7 @@ void Field_solver::eval_fields_from_potential( Spatial_mesh &spat_mesh )
     //
     for ( int i = 0; i < nx; i++ ) {
         for ( int j = 0; j < ny; j++ ) {
+            #pragma omp parallel for
             for ( int k = 0; k < nz; k++ ) {
                 if ( i == 0 ) {
                     ex = - boundary_difference( phi[i][j][k], phi[i+1][j][k], dx );

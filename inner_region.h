@@ -13,6 +13,7 @@
 #include "node_reference.h"
 #include "particle.h"
 #include "vec3d.h"
+#include <mpi.h>
 
 class Inner_region{
 public:
@@ -21,8 +22,8 @@ public:
     double potential;
     int total_absorbed_particles;
     double total_absorbed_charge;
-    //int absorbed_particles_current_timestep_current_proc;
-    //double absorbed_charge_current_timestep_current_proc;
+    int absorbed_particles_current_timestep_current_proc;
+    double absorbed_charge_current_timestep_current_proc;
 public:
     std::vector<Node_reference> inner_nodes;
     // todo: delete
@@ -37,6 +38,7 @@ public:
 	std::cout << "Inner region: name = " << name << std::endl;
 	std::cout << "potential = " << potential << std::endl;
     }
+    void sync_absorbed_charge_and_particles_across_proc();
     virtual bool check_if_point_inside( double x, double y, double z ) = 0;
     bool check_if_particle_inside( Particle &p );
     bool check_if_particle_inside_and_count_charge( Particle &p );
@@ -473,6 +475,12 @@ public:
 	return false;
     }
     
+    void sync_absorbed_charge_and_particles_across_proc()
+    {
+        for( auto &region : regions )
+            region.sync_absorbed_charge_and_particles_across_proc();
+    }
+
     void print( )
     {
 	for( auto &region : regions )

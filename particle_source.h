@@ -15,6 +15,7 @@
 #include "config.h"
 #include "particle.h"
 #include "vec3d.h"
+#include <mpi.h>
 
 class Particle_source{
 public:

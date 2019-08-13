@@ -4,17 +4,17 @@ SHELL:=/bin/bash -O extglob
 
 ##### Compilers
 #CC=clang++
-CC=g++
-HDF5FLAGS=-I/usr/include/hdf5/serial -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_BSD_SOURCE -D_FORTIFY_SOURCE=2 -g -fstack-protector-strong -Wformat -Werror=format-security
+CC=mpic++
+HDF5FLAGS=-isystem${HOME}/hdf5/usr/include/openmpi-x86_64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_BSD_SOURCE
 WARNINGS=-Wall
-CUSPFLAGS=-I/usr/include -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP
+CUSPFLAGS=-I/zfs/hybrilit.jinr.ru/user/k/krogalev/ -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP
 CFLAGS = -O2 ${HDF5FLAGS} -std=c++11 ${WARNINGS} -fopenmp ${CUSPFLAGS}
 LDFLAGS = 
 
 ### Libraries
 COMMONLIBS=-lm -lgomp
 BOOSTLIBS=-lboost_program_options
-HDF5LIBS=-L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_hl -lhdf5 -Wl,-z,relro -lpthread -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/serial
+HDF5LIBS=-L${HOME}/hdf5/usr/lib64/openmpi/lib -lhdf5_hl -lhdf5 -Wl,-z,relro -lpthread -lz -ldl -lm -Wl,-rpath -Wl,${HOME}/hdf5/usr/lib64/openmpi/lib
 LIBS=${COMMONLIBS} ${BOOSTLIBS} ${HDF5LIBS} 
 
 ### Sources and executable

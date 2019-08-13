@@ -22,6 +22,7 @@
 #include "particle.h"
 #include "vec3d.h"
 #include "physical_constants.h"
+#include <mpi.h>
 
 //#define M_PI 3.14159265358979323846264338327
 
