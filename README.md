@@ -52,7 +52,7 @@ as well as [installation procedure](https://github.com/epicf/ef/wiki/Installatio
 Some usage [examples](https://github.com/epicf/ef/wiki/Examples) are also given.
 
 
-To use Ef on Hybrilyt system you must enable following modules:
+To use Ef on Hybrilit system you must enable following modules:
 
 
 1) boost/v1.59.0-2
