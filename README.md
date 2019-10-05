@@ -50,3 +50,19 @@ reccomended to use C++ version for large-scale simulations.
 are described in detail in appropriate wiki sections,
 as well as [installation procedure](https://github.com/epicf/ef/wiki/Installation). 
 Some usage [examples](https://github.com/epicf/ef/wiki/Examples) are also given.
+
+
+To use Ef on Hybrilyt system you must enable following modules:
+
+
+1) boost/v1.59.0-2
+2) openmpi/v2.1.2-2
+3) gcc/v4.9.3-1
+4) cuda/v10.0-1
+
+
+Also you need to specialize new path to CUSP directory in Makefile 
+rewriting this line:
+
+
+CUSPFLAGS=-I/zfs/hybrilit.jinr.ru/user/and_so_on
